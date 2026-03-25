@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>한국 돈육 시세 대시보드 | 2010–2025</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #f5f4f0;
+    --surface: #ffffff;
+    --border: #e2e0d8;
+    --text: #1a1916;
+    --muted: #6b6a64;
+    --accent: #1a4fa0;
+    --accent2: #c94f1a;
+    --accent3: #2a7a4f;
+    --tag-bg: #eeecea;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  header {
+    background: var(--text);
+    color: #fff;
+    padding: 28px 40px 24px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .header-left h1 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    margin-bottom: 4px;
+  }
+
+  .header-left p {
+    font-size: 12px;
+    color: rgba(255,255,255,0.55);
+    font-weight: 300;
+  }
+
+  .header-right {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: rgba(255,255,255,0.45);
+    text-align: right;
+    line-height: 1.7;
+  }
+
+  .main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 32px 24px 60px;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 18px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 400;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .stat-value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .stat-value.up { color: var(--accent2); }
+  .stat-value.down { color: var(--accent); }
+
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+    align-items: center;
+  }
+
+  .ctrl-label {
+    font-size: 12px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  select {
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 13px;
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    outline: none;
+  }
+
+  select:focus { border-color: var(--accent); }
+
+  .toggle-group {
+    display: flex;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--surface);
+  }
+
+  .toggle-btn {
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 12px;
+    padding: 6px 14px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .toggle-btn.active {
+    background: var(--text);
+    color: #fff;
+  }
+
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+
+  .chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .chart-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .chart-sub {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .leg-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .leg-dot {
+    width: 12px;
+    height: 3px;
+    border-radius: 2px;
+  }
+
+  .leg-dashed {
+    width: 12px;
+    height: 0;
+    border-top: 2px dashed;
+  }
+
+  .chart-wrap {
+    position: relative;
+    width: 100%;
+    height: 380px;
+  }
+
+  .issues-list {
+    margin-top: 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+  }
+
+  .issue-tag {
+    background: var(--tag-bg);
+    border-left: 3px solid var(--accent2);
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-size: 11px;
+    line-height: 1.5;
+  }
+
+  .issue-tag .issue-date {
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--accent2);
+    font-size: 10px;
+    margin-bottom: 2px;
+  }
+
+  .issue-tag .issue-desc {
+    color: var(--text);
+    font-weight: 400;
+  }
+
+  footer {
+    text-align: center;
+    font-size: 11px;
+    color: var(--muted);
+    padding: 24px;
+    border-top: 1px solid var(--border);
+    line-height: 1.8;
+    background: var(--surface);
+  }
+
+  @media (max-width: 640px) {
+    header { padding: 20px; }
+    .main { padding: 20px 16px 40px; }
+    .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .chart-wrap { height: 280px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <h1>🐷 한국 돈육 시세 대시보드</h1>
+    <p>Korea Pork Price Monitor · 2010–2025 · 월별 도매/소매 추이</p>
+  </div>
+  <div class="header-right">
+    출처: 축산물품질평가원 · KAMIS<br>
+    농림축산식품부 · KREI 공개자료
+  </div>
+</header>
+
+<div class="main">
+
+  <div class="stats-grid" id="statsGrid"></div>
+
+  <div class="controls">
+    <span class="ctrl-label">기간</span>
+    <select id="yearFrom"></select>
+    <span class="ctrl-label">~</span>
+    <select id="yearTo"></select>
+
+    <div class="toggle-group">
+      <button class="toggle-btn active" onclick="setType('w',this)">도매가격 (원/kg)</button>
+      <button class="toggle-btn" onclick="setType('r',this)">소매가격 (원/100g)</button>
+    </div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-header">
+      <div>
+        <div class="chart-title" id="chartTitle">돈육 도매가격 월별 추이 (원/kg)</div>
+        <div class="chart-sub">전국 경락가격 등외제외 평균 · 빨간 점선: 주요 시장 이슈 시점</div>
+      </div>
+      <div class="legend">
+        <span class="leg-item"><span class="leg-dot" style="background:#1a4fa0"></span>월별 가격</span>
+        <span class="leg-item"><span class="leg-dashed" style="border-color:#c94f1a"></span>연간 평균</span>
+        <span class="leg-item"><span style="display:inline-block;width:2px;height:12px;background:#e53935"></span>&nbsp;주요 이슈</span>
+      </div>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="myChart"></canvas>
+    </div>
+  </div>
+
+  <div class="issues-list">
+    <div class="issue-tag"><div class="issue-date">2010.12 ~ 2011.04</div><div class="issue-desc">구제역 대규모 발생 — 공급 감소 후 가격 급등</div></div>
+    <div class="issue-tag"><div class="issue-date">2015.01 ~ 2015.06</div><div class="issue-desc">구제역 장기 지속(118일) — 소비 심리 위축</div></div>
+    <div class="issue-tag"><div class="issue-date">2019.09</div><div class="issue-desc">아프리카돼지열병(ASF) 발생 — 이동중지령, 일시 40% 급등</div></div>
+    <div class="issue-tag"><div class="issue-date">2020.01 ~ 2020.05</div><div class="issue-desc">코로나19 — 2,021원/kg 최저 후 급반등</div></div>
+    <div class="issue-tag"><div class="issue-date">2022.01 ~ 2022.06</div><div class="issue-desc">글로벌 사료비·에너지 급등 — 연중 고가 유지</div></div>
+    <div class="issue-tag"><div class="issue-date">2025.05</div><div class="issue-desc">1+급 도매가 전년비 +15% — 공급 감소·수요 증가</div></div>
+  </div>
+
+</div>
+
+<footer>
+  본 자료는 축산물품질평가원·KAMIS·농림축산식품부·KREI 공개자료 기반 추정치입니다.<br>
+  실제 거래 참고용으로만 활용하시기 바랍니다. | artreachkorea
+</footer>
+
+<script>
+var W = {
+  2010:[4050,4100,4200,4350,4500,4800,5100,5300,4900,4200,3500,3100],
+  2011:[4500,5200,5800,5600,5100,5300,5600,5800,5500,5200,4800,4600],
+  2012:[4400,4600,4800,4500,4300,4600,4900,5100,4800,4500,4200,4000],
+  2013:[3900,4000,4200,4100,4000,4300,4700,4900,4600,4300,4000,3800],
+  2014:[3800,3900,4000,4100,4200,4500,5000,5200,4700,4100,3800,3600],
+  2015:[4200,4600,5200,5800,5845,5500,5200,5100,4800,4300,3900,3700],
+  2016:[3800,4000,4300,4600,4900,5200,5500,5600,5100,4600,4200,4000],
+  2017:[4100,4300,4500,4400,4200,4500,5000,5300,5000,4500,4100,3900],
+  2018:[4000,4200,4400,4300,4100,4400,4800,5000,4700,4200,3800,3600],
+  2019:[3500,3343,3452,3700,4100,4500,4800,4900,4634,4100,3700,3500],
+  2020:[3343,2021,2500,3200,3800,4200,4600,4800,4300,3800,3500,3300],
+  2021:[3700,4000,4300,4800,5200,5600,5800,5900,5600,5100,4700,4500],
+  2022:[4800,5200,5600,5858,5400,5100,4900,4800,4500,4200,4000,3900],
+  2023:[4100,4300,4600,4900,5278,5000,4800,4700,4400,4100,3900,3700],
+  2024:[4000,4200,4500,4800,5100,5400,5800,5900,5100,4600,4300,4100],
+  2025:[4300,4600,4900,5100,5200,null,null,null,null,null,null,null]
+};
+var R = {
+  2010:[1350,1380,1420,1500,1580,1700,1850,1950,1800,1600,1400,1300],
+  2011:[1500,1700,1900,1880,1800,1850,1950,2020,1950,1850,1750,1680],
+  2012:[1600,1650,1700,1680,1650,1720,1820,1900,1800,1700,1600,1550],
+  2013:[1500,1520,1560,1540,1530,1620,1750,1850,1750,1650,1550,1490],
+  2014:[1460,1480,1500,1520,1560,1680,1850,1920,1790,1660,1550,1480],
+  2015:[1580,1700,1900,2100,2200,2100,2000,1980,1900,1750,1650,1600],
+  2016:[1550,1600,1680,1750,1820,1920,2050,2100,1980,1850,1730,1660],
+  2017:[1680,1720,1780,1750,1710,1790,2100,2334,2200,2000,1830,1750],
+  2018:[1730,1760,1800,1780,1750,1830,2000,2100,2000,1830,1720,1660],
+  2019:[1684,1684,1750,1830,1900,2000,2100,2150,2100,1900,1750,1680],
+  2020:[1623,1448,1500,1600,1720,1850,1980,2050,1900,1750,1650,1590],
+  2021:[1650,1720,1800,1920,2050,2200,2280,2300,2200,2050,1950,1880],
+  2022:[1950,2100,2250,2350,2280,2200,2150,2100,2000,1900,1820,1780],
+  2023:[1780,1850,1950,2050,2377,2300,2250,2200,2100,1980,1880,1800],
+  2024:[1820,1880,1960,2050,2150,2280,2450,2480,2200,2050,1950,1880],
+  2025:[1920,2000,2100,2180,2250,null,null,null,null,null,null,null]
+};
+var ISSUES = [
+  {y:2011,m:0,label:'구제역'},
+  {y:2015,m:4,label:'구제역'},
+  {y:2019,m:8,label:'ASF'},
+  {y:2020,m:1,label:'코로나'},
+  {y:2022,m:3,label:'물가급등'}
+];
+var MN=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+var currentType = 'w';
+var chartInst = null;
+
+function getLabels(from,to){
+  var arr=[];
+  for(var y=from;y<=to;y++) for(var m=0;m<12;m++) arr.push({y:y,m:m});
+  return arr;
+}
+function getData(labels,src){
+  return labels.map(function(l){return src[l.y]?src[l.y][l.m]!==undefined?src[l.y][l.m]:null:null;});
+}
+function getAvg(labels,data){
+  var ys={},yc={};
+  labels.forEach(function(l,i){if(data[i]!=null){ys[l.y]=(ys[l.y]||0)+data[i];yc[l.y]=(yc[l.y]||0)+1;}});
+  return labels.map(function(l){return yc[l.y]?Math.round(ys[l.y]/yc[l.y]):null;});
+}
+
+function renderStats(from,to,src){
+  var labels=getLabels(from,to);
+  var data=getData(labels,src).filter(function(v){return v!=null;});
+  if(!data.length)return;
+  var avg=Math.round(data.reduce(function(a,b){return a+b},0)/data.length);
+  var mx=Math.max.apply(null,data),mn=Math.min.apply(null,data);
+  var last=null;
+  for(var m=11;m>=0;m--){if(src[2025]&&src[2025][m]!=null){last=src[2025][m];break;}}
+  var pct=last&&mn?Math.round((last-avg)/avg*100):null;
+  document.getElementById('statsGrid').innerHTML=
+    '<div class="stat-card"><div class="stat-label">기간 평균</div><div class="stat-value">'+avg.toLocaleString()+'</div></div>'+
+    '<div class="stat-card"><div class="stat-label">역대 최고</div><div class="stat-value up">'+mx.toLocaleString()+'</div></div>'+
+    '<div class="stat-card"><div class="stat-label">역대 최저</div><div class="stat-value down">'+mn.toLocaleString()+'</div></div>'+
+    '<div class="stat-card"><div class="stat-label">2025년 최근</div><div class="stat-value">'+(last!=null?last.toLocaleString():'—')+'</div></div>';
+}
+
+function setType(t, btn){
+  currentType=t;
+  document.querySelectorAll('.toggle-btn').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  document.getElementById('chartTitle').textContent = t==='w'?'돈육 도매가격 월별 추이 (원/kg)':'삼겹살 소매가격 월별 추이 (원/100g)';
+  render();
+}
+
+function render(){
+  var from=parseInt(document.getElementById('yearFrom').value);
+  var to=parseInt(document.getElementById('yearTo').value);
+  if(from>to){to=from;document.getElementById('yearTo').value=from;}
+  var src=currentType==='w'?W:R;
+  var unit=currentType==='w'?'원/kg':'원/100g';
+  var labels=getLabels(from,to);
+  var data=getData(labels,src);
+  var avg=getAvg(labels,data);
+  var xLabels=labels.map(function(l){return l.m===0?String(l.y):'';});
+  var fullLabels=labels.map(function(l){return l.y+'년 '+MN[l.m];});
+
+  renderStats(from,to,src);
+
+  var issueIdxs=ISSUES.filter(function(iss){return iss.y>=from&&iss.y<=to;}).map(function(iss){
+    var idx=labels.findIndex(function(l){return l.y===iss.y&&l.m===iss.m;});
+    return {idx:idx,label:iss.label};
+  }).filter(function(i){return i.idx>=0;});
+
+  if(chartInst){chartInst.destroy();chartInst=null;}
+
+  var ctx=document.getElementById('myChart').getContext('2d');
+  chartInst=new Chart(ctx,{
+    type:'line',
+    data:{
+      labels:xLabels,
+      datasets:[
+        {label:'월별 가격',data:data,borderColor:'#1a4fa0',backgroundColor:'rgba(26,79,160,0.07)',borderWidth:1.5,pointRadius:0,pointHoverRadius:5,tension:0.3,fill:true,spanGaps:false},
+        {label:'연간 평균',data:avg,borderColor:'#c94f1a',borderWidth:1.5,borderDash:[6,4],pointRadius:0,tension:0,fill:false,spanGaps:true}
+      ]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{
+          title:function(ctx){return fullLabels[ctx[0].dataIndex];},
+          label:function(ctx){return ctx.dataset.label+': '+(ctx.raw!=null?ctx.raw.toLocaleString()+'원':'—');}
+        }}
+      },
+      scales:{
+        x:{ticks:{autoSkip:false,maxRotation:0,font:{size:11},color:'#6b6a64'},grid:{color:'rgba(0,0,0,0.05)'}},
+        y:{ticks:{font:{size:11},color:'#6b6a64',callback:function(v){return v.toLocaleString();}},grid:{color:'rgba(0,0,0,0.06)'},title:{display:true,text:unit,font:{size:11},color:'#6b6a64'}}
+      }
+    },
+    plugins:[{
+      id:'issueLines',
+      afterDraw:function(chart){
+        var ctx2=chart.ctx,ca=chart.chartArea;
+        issueIdxs.forEach(function(iss){
+          var meta=chart.getDatasetMeta(0);
+          var el=meta.data[iss.idx];
+          if(!el)return;
+          var x=el.x;
+          ctx2.save();
+          ctx2.strokeStyle='#e53935';
+          ctx2.lineWidth=1;
+          ctx2.setLineDash([4,3]);
+          ctx2.beginPath();ctx2.moveTo(x,ca.top+16);ctx2.lineTo(x,ca.bottom);ctx2.stroke();
+          ctx2.setLineDash([]);
+          ctx2.fillStyle='#e53935';
+          ctx2.font='bold 10px "Noto Sans KR", sans-serif';
+          ctx2.textAlign='center';
+          ctx2.fillText(iss.label,x,ca.top+10);
+          ctx2.restore();
+        });
+      }
+    }]
+  });
+}
+
+(function init(){
+  var fy=document.getElementById('yearFrom'),ty=document.getElementById('yearTo');
+  for(var y=2010;y<=2025;y++){
+    var o1=document.createElement('option');o1.value=y;o1.textContent=y+'년';fy.appendChild(o1);
+    var o2=document.createElement('option');o2.value=y;o2.textContent=y+'년';ty.appendChild(o2);
+  }
+  fy.value='2010';ty.value='2025';
+  fy.addEventListener('change',render);
+  ty.addEventListener('change',render);
+  render();
+})();
+</script>
+</body>
+</html>
